@@ -52,7 +52,9 @@ def make_train_env(env_name, seed, n_threads, env_args):
         from harl.envs.dexhands.dexhands_env import DexHandsEnv
 
         return DexHandsEnv({"n_threads": n_threads, **env_args})
-
+    if env_name == "maniskill":
+        from harl.envs.maniskill.maniskill_env import ManiSkillEnv
+        return ManiSkillEnv({"n_threads": n_threads, **env_args})
     def get_env_fn(rank):
         def init_env():
             if env_name == "smac":
@@ -93,6 +95,10 @@ def make_train_env(env_name, seed, n_threads, env_args):
                 from harl.envs.lag.lag_env import LAGEnv
 
                 env = LAGEnv(env_args)
+            elif env_name == "maniskill":
+                from harl.envs.maniskill.maniskill_env import ManiSkillEnv
+                
+                env = ManiSkillEnv(env_args)
             else:
                 print("Can not support the " + env_name + "environment.")
                 raise NotImplementedError
@@ -110,6 +116,8 @@ def make_train_env(env_name, seed, n_threads, env_args):
 def make_eval_env(env_name, seed, n_threads, env_args):
     """Make env for evaluation."""
     if env_name == "dexhands":  # dexhands does not support running multiple instances
+        raise NotImplementedError
+    if env_name == "maniskill":
         raise NotImplementedError
 
     def get_env_fn(rank):
@@ -254,6 +262,8 @@ def get_num_agents(env, env_args, envs):
     elif env == "football":
         return envs.n_agents
     elif env == "dexhands":
+        return envs.n_agents
+    elif env == "maniskill":
         return envs.n_agents
     elif env == "lag":
         return envs.n_agents

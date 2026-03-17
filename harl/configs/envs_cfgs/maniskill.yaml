@@ -1,0 +1,5 @@
+
+task: "TwoRobotPickCube-v1"
+n_threads: 1024
+proprio_per_agent: 18
+episode_length: 100
