@@ -39,42 +39,69 @@ class ManiSkillEnv:
 
         def close(self):
             self.env.close()
+
+    Observation layout
+    ------------------
+    Two modes are supported, controlled by env_args["extra_per_agent"]:
+
+    Mode A — extra_per_agent == 0  (legacy, used by TwoRobotPickCube)
+        Flat obs = [agent_0_proprio(P), ..., agent_{N-1}_proprio(P), shared(S)]
+        local_obs_i  = proprio_i (P) + shared (S)          shape: P+S
+        share_obs_i  = full flat obs                        shape: N*P+S
+
+    Mode B — extra_per_agent > 0  (new, used by MultiPickBall)
+        Flat obs = [agent_0_proprio(P), ..., agent_{N-1}_proprio(P),
+                    agent_0_extra(E), ..., agent_{N-1}_extra(E)]
+        local_obs_i  = proprio_i (P) + extra_i (E)         shape: P+E
+        share_obs_i  = full flat obs                        shape: N*(P+E)
     """
 
     def __init__(self, env_args):
 
         self.env_args = env_args
         self.env = gym.make(
-            env_args["task"],                # "TwoRobotPickCube-v1"
-            num_envs=env_args["n_threads"],  # 1024
-            obs_mode="state",                # flat tensor (1024, 66)
+            env_args["task"],                # e.g. "MultiPickBall-v1"
+            num_envs=env_args["n_threads"],  # e.g. 1024
+            obs_mode="state",                # flat tensor
         )
         self.n_envs = env_args["n_threads"]
-        self.n_agents = 2
+
+        # ---------- agent count (inferred from action space) ----------
         self.agent_names = list(self.env.action_space.spaces.keys())
+        self.n_agents = len(self.agent_names)
+
         self.per_agent_act_dim = self.env.action_space.spaces[
             self.agent_names[0]
-        ].shape[-1]  # 8
-        self.total_obs_dim = self.env.observation_space.shape[-1]  # 66
-        self.proprio_per_agent = 18   # qpos(9) + qvel(9)
-        self.proprio_total = self.proprio_per_agent * self.n_agents  # 36
-        self.shared_dim = self.total_obs_dim - self.proprio_total   # 30
-        self.local_obs_dim = self.proprio_per_agent + self.shared_dim  # 48
+        ].shape[-1]  # e.g. 8 for Panda
 
-        #  each agent's actor network input is 48 dimensions
+        self.total_obs_dim = self.env.observation_space.shape[-1]
+        self.proprio_per_agent = env_args.get("proprio_per_agent", 18)  # qpos(9)+qvel(9)
+        self.proprio_total = self.proprio_per_agent * self.n_agents
+
+        # ---------- obs split mode ----------
+        self.extra_per_agent = env_args.get("extra_per_agent", 0)
+
+        if self.extra_per_agent > 0:
+            # Mode B: per-agent private extras
+            self.local_obs_dim = self.proprio_per_agent + self.extra_per_agent
+        else:
+            # Mode A: shared extras (legacy)
+            self.shared_dim = self.total_obs_dim - self.proprio_total
+            self.local_obs_dim = self.proprio_per_agent + self.shared_dim
+
+        # each agent's actor network input
         self.observation_space = [
             Box(low=-np.inf, high=np.inf, shape=(self.local_obs_dim,), dtype=np.float32)
             for _ in range(self.n_agents)
         ]
 
-        # each agent's critic network input is 66 dimensions
-        # critic look at global information, actor only look at local information.
+        # critic sees the full global state
         self.share_observation_space = [
             Box(low=-np.inf, high=np.inf, shape=(self.total_obs_dim,), dtype=np.float32)
             for _ in range(self.n_agents)
         ]
 
-        # each agent's actor network output is 8 dimensions with range [-1, 1] 
+        # each agent's actor output
         self.action_space = [
             Box(low=-1.0, high=1.0, shape=(self.per_agent_act_dim,), dtype=np.float32)
             for _ in range(self.n_agents)
@@ -82,35 +109,37 @@ class ManiSkillEnv:
 
     def step(self, actions):
 
-        #convert HARL action format to ManiSkill3 format 
-        # HARL format: numpy (1024, 2, 8)
-        # ManiSkill3 format: dict {"panda_wristcam-0": tensor(1024,8), "panda_wristcam-1": tensor(1024,8)}
+        # HARL format: numpy (n_envs, n_agents, act_dim)
+        # ManiSkill format: dict {agent_name: tensor(n_envs, act_dim)}
         action_dict = {}
         for i, name in enumerate(self.agent_names):
             action_dict[name] = torch.tensor(
-                actions[:, i], 
+                actions[:, i],
                 dtype=torch.float32
-            )  # (1024, 8)
+            )
 
         obs, reward, terminated, truncated, info = self.env.step(action_dict)
         local_obs, share_obs = self._split_obs(obs)
-        # local_obs: numpy (1024, 2, 48)
-        # share_obs: numpy (1024, 2, 66)
-        
-        reward_np = _t2n(reward)  # (1024,)
+
+        reward_np = _t2n(reward)  # (n_envs,)
         rewards = np.stack(
             [reward_np[:, np.newaxis] for _ in range(self.n_agents)], axis=1
-        )  # (1024, 2, 1)
-        
-        done_np = _t2n(terminated | truncated).astype(np.float32)  # (1024,)
+        )  # (n_envs, n_agents, 1)
+
+        done_np = _t2n(terminated | truncated).astype(np.float32)  # (n_envs,)
         dones = np.stack(
             [done_np for _ in range(self.n_agents)], axis=1
-        )  # (1024, 2)
+        )  # (n_envs, n_agents)
 
+        # Propagate "success" from ManiSkill info dict into per-env/per-agent infos
+        # ManiSkill returns info["success"] as a boolean tensor of shape (n_envs,)
+        success_np = _t2n(info.get("success", np.zeros(self.n_envs, dtype=bool)))
+        infos = [
+            [{"success": bool(success_np[env_i])} for _ in range(self.n_agents)]
+            for env_i in range(self.n_envs)
+        ]
 
-        infos = [[{} for _ in range(self.n_agents)] for _ in range(self.n_envs)]
-
-        # continuous action space does not need action mask, return None
+        # continuous action space — no action mask needed
         avail = [None] * self.n_envs
 
         return local_obs, share_obs, rewards, dones, infos, avail
@@ -118,7 +147,6 @@ class ManiSkillEnv:
     def reset(self):
         obs, _ = self.env.reset()
         local_obs, share_obs = self._split_obs(obs)
-
         avail = [None] * self.n_envs
         return local_obs, share_obs, avail
 
@@ -128,37 +156,44 @@ class ManiSkillEnv:
     def close(self):
         self.env.close()
 
-    # ========== helper function==========
+    # ========== helper ==========
 
     def _split_obs(self, obs):
         """
-        Split the flat obs returned by ManiSkill3 into the format required by HARL.
+        Split the flat obs tensor returned by ManiSkill into HARL format.
+
         Input:
-            obs: torch tensor (n_envs, 66) on GPU
-        
+            obs: torch tensor (n_envs, total_obs_dim) on GPU
+
         Output:
-            local_obs: numpy (n_envs, n_agents, 48)
-                agent_0 take obs[0:18] + obs[36:66]
-                agent_1 take obs[18:36] + obs[36:66] 
-            share_obs: numpy (n_envs, n_agents, 66)
-       
+            local_obs:  numpy (n_envs, n_agents, local_obs_dim)
+            share_obs:  numpy (n_envs, n_agents, total_obs_dim)
         """
-        shared = obs[:, self.proprio_total:] 
-
         local_list = []
-        for i in range(self.n_agents):
-            start = i * self.proprio_per_agent
-            end = start + self.proprio_per_agent
-            agent_proprio = obs[:, start:end] 
 
-            agent_local = torch.cat([agent_proprio, shared], dim=-1)  # (1024, 48)
-            local_list.append(agent_local)
+        if self.extra_per_agent > 0:
+            # Mode B — per-agent private extras
+            # Layout: [N*proprio | N*extra]
+            for i in range(self.n_agents):
+                p_start = i * self.proprio_per_agent
+                p_end   = p_start + self.proprio_per_agent
+                e_start = self.proprio_total + i * self.extra_per_agent
+                e_end   = e_start + self.extra_per_agent
+                agent_obs = torch.cat(
+                    [obs[:, p_start:p_end], obs[:, e_start:e_end]], dim=-1
+                )  # (n_envs, local_obs_dim)
+                local_list.append(agent_obs)
+        else:
+            # Mode A — shared extras (legacy TwoRobotPickCube behaviour)
+            # Layout: [N*proprio | shared]
+            shared = obs[:, self.proprio_total:]
+            for i in range(self.n_agents):
+                p_start = i * self.proprio_per_agent
+                p_end   = p_start + self.proprio_per_agent
+                agent_local = torch.cat([obs[:, p_start:p_end], shared], dim=-1)
+                local_list.append(agent_local)
 
-        # stack to (n_envs, n_agents, 48) and then convert to numpy
-        local_obs = _t2n(torch.stack(local_list, dim=1))
-
-        # share_obs: each agent's critic look at the whole obs
-        # (n_envs, 66) -> copy n_agents times -> (n_envs, n_agents, 66)
-        share_obs = _t2n(obs.unsqueeze(1).expand(-1, self.n_agents, -1))
+        local_obs = _t2n(torch.stack(local_list, dim=1))   # (n_envs, n_agents, local_obs_dim)
+        share_obs = _t2n(obs.unsqueeze(1).expand(-1, self.n_agents, -1))  # (n_envs, n_agents, total_obs_dim)
 
         return local_obs, share_obs
