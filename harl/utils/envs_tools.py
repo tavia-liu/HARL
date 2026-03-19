@@ -119,7 +119,7 @@ def make_eval_env(env_name, seed, n_threads, env_args):
         raise NotImplementedError
     if env_name == "maniskill":
         from harl.envs.maniskill.maniskill_env import ManiSkillEnv
-        return ManiSkillEnv({"n_threads": n_threads, **env_args})
+        return ManiSkillEnv({**env_args, "n_threads": n_threads})
 
     def get_env_fn(rank):
         def init_env():
