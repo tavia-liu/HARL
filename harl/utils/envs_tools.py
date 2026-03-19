@@ -118,7 +118,8 @@ def make_eval_env(env_name, seed, n_threads, env_args):
     if env_name == "dexhands":  # dexhands does not support running multiple instances
         raise NotImplementedError
     if env_name == "maniskill":
-        raise NotImplementedError
+        from harl.envs.maniskill.maniskill_env import ManiSkillEnv
+        return ManiSkillEnv({"n_threads": n_threads, **env_args})
 
     def get_env_fn(rank):
         def init_env():

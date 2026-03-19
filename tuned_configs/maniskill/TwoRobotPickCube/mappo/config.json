@@ -27,7 +27,7 @@
             "model_dir": null
         },
         "eval": {
-            "use_eval": false,
+            "use_eval": true,
             "n_eval_rollout_threads": 10,
             "eval_episodes": 20
         },
