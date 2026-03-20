@@ -1,9 +1,30 @@
 
+import importlib.util
+import pathlib
+import sys
+
 import gymnasium as gym
 import numpy as np
 import torch
 from gymnasium.spaces import Box
 import mani_skill.envs
+
+# mani_skill.envs is the conda-installed package.  Any custom tasks that live
+# in the project's ManiSkill source tree (but were not copied into site-packages)
+# must be force-loaded here so that their @register_env decorators run.
+_PROJECT_TABLETOP = (
+    pathlib.Path(__file__).resolve().parents[4]
+    / "ManiSkill" / "mani_skill" / "envs" / "tasks" / "tabletop"
+)
+for _task_file in _PROJECT_TABLETOP.glob("*.py"):
+    _mod_name = f"_project_tabletop.{_task_file.stem}"
+    if _mod_name not in sys.modules and _task_file.stem != "__init__":
+        try:
+            _spec = importlib.util.spec_from_file_location(_mod_name, _task_file)
+            _mod = importlib.util.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+        except Exception:
+            pass  # don't break if an unrelated task fails to load
 
 
 def _t2n(x):
