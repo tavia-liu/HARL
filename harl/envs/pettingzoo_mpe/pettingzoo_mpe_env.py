@@ -26,7 +26,7 @@ class PettingZooMPEEnv:
             self.max_cycles = 25
             self.args["max_cycles"] = 26
         self.cur_step = 0
-        self.module = importlib.import_module("pettingzoo.mpe." + self.scenario)
+        self.module = importlib.import_module("pettingzoo.mpe." + self.scenario.rsplit("_v", 1)[0] + "_v3")
         self.env = ss.pad_action_space_v0(
             ss.pad_observations_v0(self.module.parallel_env(**self.args))
         )

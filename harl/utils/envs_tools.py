@@ -79,6 +79,7 @@ def make_train_env(env_name, seed, n_threads, env_args):
                 assert env_args["scenario"] in [
                     "simple_v2",
                     "simple_spread_v2",
+                    "simple_spread_v3",
                     "simple_reference_v2",
                     "simple_speaker_listener_v3",
                 ], "only cooperative scenarios in MPE are supported"
