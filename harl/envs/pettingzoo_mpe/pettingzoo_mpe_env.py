@@ -68,7 +68,9 @@ class PettingZooMPEEnv:
         """Returns initial observations and states"""
         self._seed += 1
         self.cur_step = 0
-        obs = self.unwrap(self.env.reset(seed=self._seed))
+        reset_result = self.env.reset(seed=self._seed)
+        obs_dict = reset_result[0] if isinstance(reset_result, tuple) else reset_result
+        obs = self.unwrap(obs_dict)
         s_obs = self.repeat(self.env.state())
         return obs, s_obs, self.get_avail_actions()
 
