@@ -2,7 +2,7 @@
     "main_args": {
         "algo": "happo",
         "env": "maniskill",
-        "exp_name": "MultiPushCube_happo_fixed",
+        "exp_name": "MultiPushCube_happo_10M",
         "load_config": ""
     },
     "algo_args": {
@@ -17,7 +17,7 @@
         },
         "train": {
             "n_rollout_threads": 1024,
-            "num_env_steps": 5000000,
+            "num_env_steps": 10000000,
             "episode_length": 50,
             "log_interval": 5,
             "eval_interval": 10,
