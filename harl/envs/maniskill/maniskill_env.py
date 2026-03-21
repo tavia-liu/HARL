@@ -91,7 +91,7 @@ class ManiSkillEnv:
         ]
 
         # ---------- track elapsed steps for correct done signals ----------
-        self._max_episode_steps = self.env.spec.max_episode_steps if self.env.spec else env_args.get("episode_length", 100)
+        self._max_episode_steps = env_args.get("episode_length", 100)
         self._elapsed = np.zeros(self.n_envs, dtype=np.int32)
 
     def step(self, actions):
