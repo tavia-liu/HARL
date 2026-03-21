@@ -155,14 +155,22 @@ class ManiSkillEnv:
         # Propagate "success" from ManiSkill info dict into per-env/per-agent infos
         # ManiSkill returns info["success"] as a boolean tensor of shape (n_envs,)
         success_np = _t2n(info.get("success", np.zeros(self.n_envs, dtype=bool)))
+        truncated_np = _t2n(truncated).astype(bool)
+        terminated_np = _t2n(terminated).astype(bool)
         infos = [
-            [{"success": bool(success_np[env_i])} for _ in range(self.n_agents)]
+            [
+                {
+                    "success": bool(success_np[env_i]),
+                    "bad_transition": bool(truncated_np[env_i] and not terminated_np[env_i]),
+                }
+                for _ in range(self.n_agents)
+            ]
             for env_i in range(self.n_envs)
         ]
-
+ 
         # continuous action space — no action mask needed
         avail = [None] * self.n_envs
-
+ 
         return local_obs, share_obs, rewards, dones, infos, avail
 
     def reset(self):
