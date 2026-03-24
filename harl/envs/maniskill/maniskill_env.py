@@ -36,8 +36,11 @@ class ManiSkillEnv:
             env_args["task"],
             num_envs=env_args["n_threads"],
             obs_mode="state",
+            control_mode=env_args.get("control_mode", "pd_joint_delta_pos"),
+            sim_backend="physx_cuda",
         )
         self.n_envs = env_args["n_threads"]
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # ---------- agent count ----------
         self.agent_names = list(self.env.action_space.spaces.keys())
@@ -82,7 +85,7 @@ class ManiSkillEnv:
         # ManiSkill format: dict {agent_name: tensor(n_envs, act_dim)}
         action_dict = {}
         for i, name in enumerate(self.agent_names):
-            action_dict[name] = torch.tensor(actions[:, i], dtype=torch.float32)
+            action_dict[name] = torch.tensor(actions[:, i], dtype=torch.float32, device=self.device)
 
         obs, reward, terminated, truncated, info = self.env.step(action_dict)
         local_obs, share_obs = self._split_obs(obs)
