@@ -83,6 +83,7 @@ class ManiSkillEnv:
     def step(self, actions):
         # HARL format: numpy (n_envs, n_agents, act_dim)
         # ManiSkill format: dict {agent_name: tensor(n_envs, act_dim)}
+        actions = np.clip(actions, -1.0, 1.0)
         action_dict = {}
         for i, name in enumerate(self.agent_names):
             action_dict[name] = torch.tensor(actions[:, i], dtype=torch.float32, device=self.device)
