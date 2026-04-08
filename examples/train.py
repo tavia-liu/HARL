@@ -38,6 +38,7 @@ def main():
             "gym",
             "football",
             "dexhands",
+            "maniskill",
             "smacv2",
             "lag",
         ],
@@ -82,6 +83,9 @@ def main():
     if args["env"] == "dexhands":
         algo_args["eval"]["use_eval"] = False
         algo_args["train"]["episode_length"] = env_args["hands_episode_length"]
+
+    if args["env"] == "maniskill":
+        algo_args["eval"]["use_eval"] = False
 
     # start training
     from harl.runners import RUNNER_REGISTRY

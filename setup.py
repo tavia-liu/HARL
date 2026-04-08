@@ -15,6 +15,8 @@ setup(
         "tensorboard>=2.2.1",
         "tensorboardX",
         "setproctitle",
+        "mani_skill",
+        "gymnasium",
     ],
     classifiers=[
         "License :: OSI Approved :: MIT License",
