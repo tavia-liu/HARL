@@ -2,6 +2,10 @@
 **/results/**
 .VSCodeCounter/
 
+# wandb logs
+wandb/
+examples/wandb/
+
 ##### Python.gitignore #####
 # Byte-compiled / optimized / DLL files
 __pycache__/

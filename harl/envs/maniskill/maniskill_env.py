@@ -82,12 +82,21 @@ class ManiSkillEnv:
         done = torch.logical_or(term, trunc)
         rew = rew.unsqueeze(-1).unsqueeze(-1).expand(-1, self.n_agents, 1)
         done = done.unsqueeze(-1).expand(-1, self.n_agents)
+        infos = [[{} for _ in range(self.n_agents)] for _ in range(self.n_envs)]
+        if "final_info" in info:
+            mask = info["_final_info"]
+            episode = info["final_info"]["episode"]
+            for env_i in range(self.n_envs):
+                if mask[env_i]:
+                    ep = {k: float(v[env_i]) for k, v in episode.items()}
+                    for agent_i in range(self.n_agents):
+                        infos[env_i][agent_i]["episode"] = ep
         return (
             _t2n(per_agent_obs),
             _t2n(share_obs),
             _t2n(rew),
             _t2n(done),
-            [[{} for _ in range(self.n_agents)] for _ in range(self.n_envs)],
+            infos,
             [None] * self.n_envs,
         )
 
