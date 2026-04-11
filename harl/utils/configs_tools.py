@@ -3,7 +3,25 @@ import time
 import os
 import json
 import yaml
+import wandb
 from uu import Error
+
+
+class WandbWriter:
+    """Drop-in replacement for tensorboardX SummaryWriter that logs to wandb."""
+
+    def add_scalars(self, main_tag, tag_scalar_dict, global_step):
+        for k, v in tag_scalar_dict.items():
+            wandb.log({k: v}, step=int(global_step))
+
+    def add_scalar(self, tag, scalar_value, global_step):
+        wandb.log({tag: scalar_value}, step=int(global_step))
+
+    def export_scalars_to_json(self, path):
+        pass
+
+    def close(self):
+        wandb.finish()
 
 
 def get_defaults_yaml_args(algo, env):
@@ -85,9 +103,11 @@ def init_dir(env, env_args, algo, exp_name, seed, logger_path):
     )
     log_path = os.path.join(results_path, "logs")
     os.makedirs(log_path, exist_ok=True)
-    from tensorboardX import SummaryWriter
-
-    writter = SummaryWriter(log_path)
+    if wandb.run is not None:
+        writter = WandbWriter()
+    else:
+        from tensorboardX import SummaryWriter
+        writter = SummaryWriter(log_path)
     models_path = os.path.join(results_path, "models")
     os.makedirs(models_path, exist_ok=True)
     return results_path, log_path, models_path, writter

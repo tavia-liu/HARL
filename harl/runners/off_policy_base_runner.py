@@ -526,9 +526,10 @@ class OffPolicyBaseRunner:
             eval_battles_won = 0
         if "football" in self.args["env"]:
             eval_score_cnt = 0
+        eval_episode_metrics = []
         episode_lens = []
         one_episode_len = np.zeros(
-            self.algo_args["eval"]["n_eval_rollout_threads"], dtype=np.int32      
+            self.algo_args["eval"]["n_eval_rollout_threads"], dtype=np.int32
         )
 
         eval_obs, eval_share_obs, eval_available_actions = self.eval_envs.reset()
@@ -571,6 +572,9 @@ class OffPolicyBaseRunner:
                     one_episode_rewards[eval_i] = []
                     episode_lens.append(one_episode_len[eval_i].copy())
                     one_episode_len[eval_i] = 0
+                    ep = eval_infos[eval_i][0].get("episode", {})
+                    if ep:
+                        eval_episode_metrics.append(ep)
 
             if eval_episode >= self.algo_args["eval"]["eval_episodes"]:
                 # eval_log returns whether the current model should be saved
@@ -636,6 +640,10 @@ class OffPolicyBaseRunner:
                 self.writter.add_scalar(
                     "eval_average_episode_length", eval_avg_len, step
                 )
+                if eval_episode_metrics:
+                    for k in eval_episode_metrics[0]:
+                        mean_val = np.mean([ep[k] for ep in eval_episode_metrics])
+                        self.writter.add_scalar(f"eval/{k}", mean_val, step)
                 break
 
     @torch.no_grad()

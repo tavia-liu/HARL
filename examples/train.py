@@ -1,7 +1,8 @@
 """Train an algorithm."""
 import argparse
 import json
-from harl.utils.configs_tools import get_defaults_yaml_args, update_args
+import wandb
+from harl.utils.configs_tools import get_defaults_yaml_args, update_args, get_task_name
 
 
 def main():
@@ -86,6 +87,17 @@ def main():
 
     if args["env"] == "maniskill":
         algo_args["eval"]["use_eval"] = True
+
+    # init wandb
+    task = get_task_name(args["env"], env_args)
+    seed = algo_args["seed"]["seed"]
+    wandb.init(
+        project="maniskill_baselines",
+        name=f"{args['exp_name']}_seed{seed}",
+        group=args["algo"],
+        job_type=task,
+        config={"args": args, "algo_args": algo_args, "env_args": env_args},
+    )
 
     # start training
     from harl.runners import RUNNER_REGISTRY
