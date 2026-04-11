@@ -7,6 +7,24 @@ class ManiSkillLogger(BaseLogger):
     def get_task_name(self):
         return self.env_args["task"]
 
+    def eval_init(self):
+        super().eval_init()
+        self.eval_episode_metrics = []
+
+    def eval_thread_done(self, tid):
+        super().eval_thread_done(tid)
+        ep = self.eval_infos[tid][0].get("episode", {})
+        if ep:
+            self.eval_episode_metrics.append(ep)
+
+    def eval_log(self, eval_episode):
+        super().eval_log(eval_episode)
+        if self.eval_episode_metrics:
+            for k in self.eval_episode_metrics[0]:
+                mean_val = np.mean([ep[k] for ep in self.eval_episode_metrics])
+                self.writter.add_scalar(f"eval/{k}", mean_val, self.total_num_steps)
+            self.eval_episode_metrics = []
+
     def episode_log(
         self, actor_train_infos, critic_train_info, actor_buffer, critic_buffer
     ):
