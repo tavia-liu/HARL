@@ -1,5 +1,6 @@
 """Base runner for on-policy algorithms."""
 
+import os
 import time
 import numpy as np
 import torch
@@ -77,12 +78,13 @@ class OnPolicyBaseRunner:
                 algo_args["train"]["n_rollout_threads"],
                 env_args,
             )
+            eval_env_args = {**env_args, "video_dir": os.path.join(self.run_dir, "eval_videos")}
             self.eval_envs = (
                 make_eval_env(
                     args["env"],
                     algo_args["seed"]["seed"],
                     algo_args["eval"]["n_eval_rollout_threads"],
-                    env_args,
+                    eval_env_args,
                 )
                 if algo_args["eval"]["use_eval"]
                 else None
