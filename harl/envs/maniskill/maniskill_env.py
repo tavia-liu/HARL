@@ -53,9 +53,10 @@ class ManiSkillEnv:
         if env_args.get("record_video"):
             from mani_skill.utils.wrappers.record import RecordEpisode
             video_dir = env_args.get("video_dir", f"eval_videos/{env_args['task']}")
+            max_episode_steps = env.unwrapped.max_episode_steps
             env = RecordEpisode(
                 env, output_dir=video_dir, save_trajectory=False,
-                max_steps_per_video=env_args.get("max_episode_steps", 200),
+                max_steps_per_video=max_episode_steps,
                 video_fps=30,
             )
         partial_reset = env_args.get("partial_reset", True)
