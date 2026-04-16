@@ -48,7 +48,6 @@ class ManiSkillEnv:
             sim_backend="gpu",
             control_mode="pd_joint_delta_pos",
             reward_mode="normalized_dense",
-            partial_reset=env_args.get("partial_reset", True),
         )
         env = gym.make(env_args["task"], num_envs=self.n_envs, **env_kwargs)
         if env_args.get("record_video"):
@@ -60,7 +59,8 @@ class ManiSkillEnv:
                 video_fps=30,
             )
         env = ManiSkillVectorEnv(
-            env, self.n_envs, ignore_terminations=False, record_metrics=True
+            env, self.n_envs, ignore_terminations=False, record_metrics=True,
+            partial_reset=env_args.get("partial_reset", True),
         )
         return env
 
