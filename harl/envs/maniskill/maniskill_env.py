@@ -58,9 +58,10 @@ class ManiSkillEnv:
                 max_steps_per_video=env_args.get("max_episode_steps", 200),
                 video_fps=30,
             )
+        partial_reset = env_args.get("partial_reset", True)
         env = ManiSkillVectorEnv(
-            env, self.n_envs, ignore_terminations=False, record_metrics=True,
-            partial_reset=env_args.get("partial_reset", True),
+            env, self.n_envs, ignore_terminations=not partial_reset, record_metrics=True,
+            partial_reset=partial_reset,
         )
         return env
 
