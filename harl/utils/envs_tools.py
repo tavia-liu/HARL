@@ -54,7 +54,7 @@ def make_train_env(env_name, seed, n_threads, env_args):
         return DexHandsEnv({"n_threads": n_threads, **env_args})
     if env_name == "maniskill":
         from harl.envs.maniskill.maniskill_env import ManiSkillEnv
-        return ManiSkillEnv({"n_threads": n_threads, **env_args, "record_video": False})
+        return ManiSkillEnv({"n_threads": n_threads, **env_args, "record_video": False, "partial_reset": True})
     def get_env_fn(rank):
         def init_env():
             if env_name == "smac":
@@ -119,7 +119,7 @@ def make_eval_env(env_name, seed, n_threads, env_args):
         raise NotImplementedError
     if env_name == "maniskill":
         from harl.envs.maniskill.maniskill_env import ManiSkillEnv
-        eval_env_args = {**env_args, "n_threads": n_threads, "record_video": True}
+        eval_env_args = {**env_args, "n_threads": n_threads, "record_video": True, "partial_reset": False}
         return ManiSkillEnv(eval_env_args)
 
     def get_env_fn(rank):

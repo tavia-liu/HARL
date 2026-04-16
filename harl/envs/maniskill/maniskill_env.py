@@ -45,8 +45,10 @@ class ManiSkillEnv:
         env_kwargs = dict(
             obs_mode="state_dict",
             render_mode="rgb_array",
-            sim_backend="physx_cuda",
+            sim_backend="gpu",
             control_mode="pd_joint_delta_pos",
+            reward_mode="normalized_dense",
+            partial_reset=env_args.get("partial_reset", True),
         )
         env = gym.make(env_args["task"], num_envs=self.n_envs, **env_kwargs)
         if env_args.get("record_video"):
