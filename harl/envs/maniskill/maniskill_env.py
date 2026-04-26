@@ -5,6 +5,7 @@ from gymnasium import spaces
 
 import mani_skill.envs  # noqa: F401
 from mani_skill.utils.common import flatten_state_dict
+from mani_skill.utils import gym_utils
 from mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 
 
@@ -55,7 +56,7 @@ class ManiSkillEnv:
             video_dir = env_args.get("video_dir", f"eval_videos/{env_args['task']}")
             env = RecordEpisode(
                 env, output_dir=video_dir, save_trajectory=False,
-                max_steps_per_video=env.spec.max_episode_steps,
+                max_steps_per_video=gym_utils.find_max_episode_steps_value(env),
                 video_fps=30,
             )
         partial_reset = env_args.get("partial_reset", True)
