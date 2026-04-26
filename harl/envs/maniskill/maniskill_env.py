@@ -70,17 +70,17 @@ class ManiSkillEnv:
         extra = obs["extra"]
         per_agent = []
         for uid in self.agent_uids:
-            per_agent.append(
-                flatten_state_dict(
-                    {"agent": obs["agent"][uid], "extra": extra},
-                    use_torch=True,
-                    device=self.device,
-                )
+            flat = flatten_state_dict(
+                {"agent": obs["agent"][uid], "extra": extra},
+                use_torch=True,
+                device=self.device,
             )
+            per_agent.append(torch.nan_to_num(flat, nan=0.0, posinf=1.0, neginf=-1.0))
         return torch.stack(per_agent, dim=1)
 
     def _flatten_share(self, obs):
         flat = flatten_state_dict(obs, use_torch=True, device=self.device)
+        flat = torch.nan_to_num(flat, nan=0.0, posinf=1.0, neginf=-1.0)
         return flat.unsqueeze(1).expand(-1, self.n_agents, -1).contiguous()
 
     def _build_action(self, actions):
