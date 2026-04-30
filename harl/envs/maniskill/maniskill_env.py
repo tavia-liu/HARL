@@ -50,6 +50,8 @@ class ManiSkillEnv:
             control_mode=env_args.get("control_mode", "pd_joint_delta_pos"),
             reward_mode=env_args.get("reward_mode", "normalized_dense"),
         )
+        if env_args.get("record_video"):
+            env_kwargs["human_render_camera_configs"] = dict(shader_pack="default")
         env = gym.make(env_args["task"], num_envs=self.n_envs, **env_kwargs)
         if env_args.get("record_video"):
             from mani_skill.utils.wrappers.record import RecordEpisode
