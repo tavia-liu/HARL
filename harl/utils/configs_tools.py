@@ -93,8 +93,11 @@ def init_dir(env, env_args, algo, exp_name, seed, logger_path):
     """Init directory for saving results."""
     task = get_task_name(env, env_args)
     hms_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+    results_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "results")
+    )
     results_path = os.path.join(
-        logger_path,
+        results_root,
         env,
         task,
         algo,
