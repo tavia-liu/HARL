@@ -58,6 +58,7 @@ class ManiSkillEnv:
                 env, output_dir=video_dir, save_trajectory=False,
                 max_steps_per_video=gym_utils.find_max_episode_steps_value(env),
                 video_fps=30,
+                info_on_video=env_args.get("info_on_video", False),
             )
         partial_reset = env_args.get("partial_reset", True)
         env = ManiSkillVectorEnv(

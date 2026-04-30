@@ -2,3 +2,4 @@ task: "TwoRobotPickCube-v1"
 control_mode: "pd_joint_delta_pos"
 reward_mode: "normalized_dense"
 obs_mode: "state_dict"
+n_render_rollout_threads: 1

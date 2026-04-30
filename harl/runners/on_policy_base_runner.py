@@ -261,10 +261,15 @@ class OnPolicyBaseRunner:
 
             # eval
             if episode % self.algo_args["train"]["eval_interval"] == 0:
+                cur_step = (
+                    episode
+                    * self.algo_args["train"]["episode_length"]
+                    * self.algo_args["train"]["n_rollout_threads"]
+                )
                 if self.algo_args["eval"]["use_eval"]:
                     self.prep_rollout()
                     self.eval()
-                self.save()
+                self.save(cur_step)
 
             self.after_update()
 
@@ -723,22 +728,26 @@ class OnPolicyBaseRunner:
             self.actor[agent_id].prep_training()
         self.critic.prep_training()
 
-    def save(self):
+    def save(self, step=None):
         """Save model parameters."""
+        save_dir = self.save_dir
+        if step is not None:
+            save_dir = os.path.join(str(self.save_dir), f"ckpt_{step}")
+            os.makedirs(save_dir, exist_ok=True)
         for agent_id in range(self.num_agents):
             policy_actor = self.actor[agent_id].actor
             torch.save(
                 policy_actor.state_dict(),
-                str(self.save_dir) + "/actor_agent" + str(agent_id) + ".pt",
+                str(save_dir) + "/actor_agent" + str(agent_id) + ".pt",
             )
         policy_critic = self.critic.critic
         torch.save(
-            policy_critic.state_dict(), str(self.save_dir) + "/critic_agent" + ".pt"
+            policy_critic.state_dict(), str(save_dir) + "/critic_agent" + ".pt"
         )
         if self.value_normalizer is not None:
             torch.save(
                 self.value_normalizer.state_dict(),
-                str(self.save_dir) + "/value_normalizer" + ".pt",
+                str(save_dir) + "/value_normalizer" + ".pt",
             )
 
     def restore(self):

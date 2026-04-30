@@ -119,7 +119,7 @@ def make_eval_env(env_name, seed, n_threads, env_args):
         raise NotImplementedError
     if env_name == "maniskill":
         from harl.envs.maniskill.maniskill_env import ManiSkillEnv
-        eval_env_args = {**env_args, "n_threads": n_threads, "record_video": True, "partial_reset": False}
+        eval_env_args = {**env_args, "n_threads": n_threads, "record_video": True, "partial_reset": False, "info_on_video": env_args.get("info_on_video", False)}
         return ManiSkillEnv(eval_env_args)
 
     def get_env_fn(rank):
@@ -229,6 +229,22 @@ def make_render_env(env_name, seed, env_args):
 
         env = LAGEnv(env_args)
         env.seed(seed * 60000)
+    elif env_name == "maniskill":
+        from harl.envs.maniskill.maniskill_env import ManiSkillEnv
+
+        n_threads = env_args.get("n_render_rollout_threads", 1)
+        env = ManiSkillEnv({
+            **env_args,
+            "n_threads": n_threads,
+            "record_video": True,
+            "info_on_video": True,
+            "partial_reset": False,
+            "video_dir": f"render_videos/{env_args['task']}",
+        })
+        manual_render = False
+        manual_expand_dims = False
+        manual_delay = False
+        env_num = n_threads
     else:
         print("Can not support the " + env_name + "environment.")
         raise NotImplementedError

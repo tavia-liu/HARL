@@ -142,8 +142,12 @@ class OffPolicyHARunner(OffPolicyBaseRunner):
                         actor_loss = -torch.mean(
                             value_pred - self.alpha[agent_id] * logp_action
                         )
+                    print("value_pred NaN:", torch.isnan(value_pred).any().item(), flush=True)
+                    print("logp_action NaN:", torch.isnan(logp_action).any().item(), flush=True)
+                    print("actor_loss NaN:", torch.isnan(actor_loss).any().item(), flush=True)
                     self.actor[agent_id].actor_optimizer.zero_grad()
                     actor_loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.actor[agent_id].actor.parameters(), 0.5)
                     self.actor[agent_id].actor_optimizer.step()
                     self.actor[agent_id].turn_off_grad()
                     # train this agent's alpha
@@ -200,6 +204,7 @@ class OffPolicyHARunner(OffPolicyBaseRunner):
                         actor_loss = torch.mean(F.mse_loss(actor_values, critic_values))
                         self.actor[agent_id].actor_optimizer.zero_grad()
                         actor_loss.backward()
+                        torch.nn.utils.clip_grad_norm_(self.actor[agent_id].actor.parameters(), 0.5)
                         self.actor[agent_id].actor_optimizer.step()
                         self.actor[agent_id].turn_off_grad()
                         update_actions(agent_id)
@@ -228,6 +233,7 @@ class OffPolicyHARunner(OffPolicyBaseRunner):
                         actor_loss = -torch.mean(value_pred)
                         self.actor[agent_id].actor_optimizer.zero_grad()
                         actor_loss.backward()
+                        torch.nn.utils.clip_grad_norm_(self.actor[agent_id].actor.parameters(), 0.5)
                         self.actor[agent_id].actor_optimizer.step()
                         self.actor[agent_id].turn_off_grad()
                         actions[agent_id] = self.actor[agent_id].get_actions(

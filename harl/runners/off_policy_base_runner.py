@@ -303,7 +303,7 @@ class OffPolicyBaseRunner:
                         )
                         self.log_file.flush()
                         self.done_episodes_rewards = []
-                self.save()
+                self.save(cur_step)
 
     def warmup(self):
         """Warmup the replay buffer with random actions"""
@@ -730,15 +730,19 @@ class OffPolicyBaseRunner:
                 )
                 self.value_normalizer.load_state_dict(value_normalizer_state_dict)
 
-    def save(self):
+    def save(self, step=None):
         """Save the model"""
+        save_dir = self.save_dir
+        if step is not None:
+            save_dir = os.path.join(str(self.save_dir), f"ckpt_{step}")
+            os.makedirs(save_dir, exist_ok=True)
         for agent_id in range(self.num_agents):
-            self.actor[agent_id].save(self.save_dir, agent_id)
-        self.critic.save(self.save_dir)
+            self.actor[agent_id].save(save_dir, agent_id)
+        self.critic.save(save_dir)
         if self.value_normalizer is not None:
             torch.save(
                 self.value_normalizer.state_dict(),
-                str(self.save_dir) + "/value_normalizer" + ".pt",
+                str(save_dir) + "/value_normalizer" + ".pt",
             )
 
     def close(self):
