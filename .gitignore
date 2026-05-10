@@ -5,6 +5,7 @@
 # wandb logs
 wandb/
 examples/wandb/
+examples/render_videos
 
 ##### Python.gitignore #####
 # Byte-compiled / optimized / DLL files

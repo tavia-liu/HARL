@@ -119,7 +119,13 @@ def make_eval_env(env_name, seed, n_threads, env_args):
         raise NotImplementedError
     if env_name == "maniskill":
         from harl.envs.maniskill.maniskill_env import ManiSkillEnv
-        eval_env_args = {**env_args, "n_threads": n_threads, "record_video": False, "partial_reset": False, "info_on_video": env_args.get("info_on_video", False)}
+        eval_env_args = {
+            **env_args,
+            "n_threads": n_threads,
+            "record_video": env_args.get("eval_record_video", False),
+            "info_on_video": env_args.get("eval_info_on_video", False),
+            "partial_reset": False,
+        }
         return ManiSkillEnv(eval_env_args)
 
     def get_env_fn(rank):
